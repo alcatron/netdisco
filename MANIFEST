@@ -7,6 +7,7 @@ bin/netdisco-daemon-fg
 bin/netdisco-db-deploy
 bin/netdisco-deploy
 bin/netdisco-do
+bin/netdisco-env
 bin/netdisco-rancid-export
 bin/netdisco-sshcollector
 bin/netdisco-web
@@ -24,6 +25,7 @@ lib/App/Netdisco/Configuration.pm
 lib/App/Netdisco/DB.pm
 lib/App/Netdisco/DB/ExplicitLocking.pm
 lib/App/Netdisco/DB/Result.pm
+lib/App/Netdisco/DB/Result/AccessControlList.pm
 lib/App/Netdisco/DB/Result/Admin.pm
 lib/App/Netdisco/DB/Result/Community.pm
 lib/App/Netdisco/DB/Result/Device.pm
@@ -50,6 +52,7 @@ lib/App/Netdisco/DB/Result/NodeMonitor.pm
 lib/App/Netdisco/DB/Result/NodeNbt.pm
 lib/App/Netdisco/DB/Result/NodeWireless.pm
 lib/App/Netdisco/DB/Result/Oui.pm
+lib/App/Netdisco/DB/Result/PortCtlRole.pm
 lib/App/Netdisco/DB/Result/Process.pm
 lib/App/Netdisco/DB/Result/Product.pm
 lib/App/Netdisco/DB/Result/Session.pm
@@ -60,6 +63,7 @@ lib/App/Netdisco/DB/Result/Subnet.pm
 lib/App/Netdisco/DB/Result/Topology.pm
 lib/App/Netdisco/DB/Result/User.pm
 lib/App/Netdisco/DB/Result/UserLog.pm
+lib/App/Netdisco/DB/Result/Virtual/ACLEntriesWithDNS.pm
 lib/App/Netdisco/DB/Result/Virtual/ActiveNode.pm
 lib/App/Netdisco/DB/Result/Virtual/ActiveNodeWithAge.pm
 lib/App/Netdisco/DB/Result/Virtual/ApRadioChannelPower.pm
@@ -104,6 +108,7 @@ lib/App/Netdisco/DB/ResultSet/Node.pm
 lib/App/Netdisco/DB/ResultSet/NodeIp.pm
 lib/App/Netdisco/DB/ResultSet/NodeNbt.pm
 lib/App/Netdisco/DB/ResultSet/NodeWireless.pm
+lib/App/Netdisco/DB/ResultSet/PortCtlRole.pm
 lib/App/Netdisco/DB/ResultSet/Subnet.pm
 lib/App/Netdisco/DB/SchemaVersioned.pm
 lib/App/Netdisco/DB/SetOperations.pm
@@ -121,11 +126,13 @@ lib/App/Netdisco/SSHCollector/Platform/ASAContext.pm
 lib/App/Netdisco/SSHCollector/Platform/BigIP.pm
 lib/App/Netdisco/SSHCollector/Platform/Clavister.pm
 lib/App/Netdisco/SSHCollector/Platform/CPVSX.pm
+lib/App/Netdisco/SSHCollector/Platform/EOS.pm
 lib/App/Netdisco/SSHCollector/Platform/FortiOS.pm
 lib/App/Netdisco/SSHCollector/Platform/FreeBSD.pm
 lib/App/Netdisco/SSHCollector/Platform/FTD.pm
 lib/App/Netdisco/SSHCollector/Platform/GAIAEmbedded.pm
 lib/App/Netdisco/SSHCollector/Platform/IOS.pm
+lib/App/Netdisco/SSHCollector/Platform/IOSXEMac.pm
 lib/App/Netdisco/SSHCollector/Platform/IOSXR.pm
 lib/App/Netdisco/SSHCollector/Platform/Linux.pm
 lib/App/Netdisco/SSHCollector/Platform/NXOS.pm
@@ -173,7 +180,9 @@ lib/App/Netdisco/Web/Plugin/AdminTask/JobQueue.pm
 lib/App/Netdisco/Web/Plugin/AdminTask/NodeMonitor.pm
 lib/App/Netdisco/Web/Plugin/AdminTask/OrphanedDevices.pm
 lib/App/Netdisco/Web/Plugin/AdminTask/PollerPerformance.pm
+lib/App/Netdisco/Web/Plugin/AdminTask/PortCtlRole.pm
 lib/App/Netdisco/Web/Plugin/AdminTask/PseudoDevice.pm
+lib/App/Netdisco/Web/Plugin/AdminTask/RolePermissionsEditor.pm
 lib/App/Netdisco/Web/Plugin/AdminTask/SlowDevices.pm
 lib/App/Netdisco/Web/Plugin/AdminTask/TimedOutDevices.pm
 lib/App/Netdisco/Web/Plugin/AdminTask/Topology.pm
@@ -428,6 +437,7 @@ share/public/swagger-ui/swagger-ui.js
 share/public/swagger-ui/swagger-ui.js.map
 share/public/swagger-ui/version-3.20.3
 share/python/netdisco/.pre-commit-config.yaml
+share/python/netdisco/netdisco/__init__.py
 share/python/netdisco/netdisco/runner.py
 share/python/netdisco/netdisco/util/config.py
 share/python/netdisco/netdisco/util/database.py
@@ -446,7 +456,6 @@ share/python/netdisco/netdisco/worklet/stats/early.py
 share/python/netdisco/pyproject.toml
 share/python/netdisco/ruff.toml
 share/python/netdisco/tests/__init__.py
-share/python/netdisco/uv.lock
 share/python/tfsm/index
 share/python/tfsm/juniper_junos_show_bgp_summary.textfsm
 share/python/tfsm/juniper_junos_show_route_forwarding-table.textfsm
@@ -543,6 +552,9 @@ share/schema_versions/App-Netdisco-DB-9-10-PostgreSQL.sql
 share/schema_versions/App-Netdisco-DB-90-91-PostgreSQL.sql
 share/schema_versions/App-Netdisco-DB-91-92-PostgreSQL.sql
 share/schema_versions/App-Netdisco-DB-92-93-PostgreSQL.sql
+share/schema_versions/App-Netdisco-DB-93-94-PostgreSQL.sql
+share/schema_versions/App-Netdisco-DB-94-95-PostgreSQL.sql
+share/schema_versions/App-Netdisco-DB-95-96-PostgreSQL.sql
 share/views/admintask.tt
 share/views/ajax/admintask/duplicatedevices.tt
 share/views/ajax/admintask/jobqueue.tt
@@ -550,7 +562,9 @@ share/views/ajax/admintask/nodemonitor.tt
 share/views/ajax/admintask/orphaned.tt
 share/views/ajax/admintask/orphaned_csv.tt
 share/views/ajax/admintask/performance.tt
+share/views/ajax/admintask/portctlrole.tt
 share/views/ajax/admintask/pseudodevice.tt
+share/views/ajax/admintask/rolepermissionseditor.tt
 share/views/ajax/admintask/slowdevices.tt
 share/views/ajax/admintask/timedoutdevices.tt
 share/views/ajax/admintask/topology.tt
@@ -649,6 +663,7 @@ share/views/plugin.tt
 share/views/report.tt
 share/views/search.tt
 share/views/sidebar/admintask/jobqueue.tt
+share/views/sidebar/admintask/rolepermissionseditor.tt
 share/views/sidebar/admintask/topology.tt
 share/views/sidebar/device/netmap.tt
 share/views/sidebar/device/ports.tt

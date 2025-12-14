@@ -15,6 +15,7 @@ our @EXPORT_OK = qw/
   get_communities
   snmp_comm_reindex
   get_mibdirs
+  get_mibdirs_shortnames
   decode_and_munge
   sortable_oid
 /;
@@ -65,14 +66,6 @@ sub get_communities {
     }
   }
 
-  # clean the community table of obsolete tags
-  eval { $device->community->update({$tag_name => undef}) }
-    if $device->in_storage
-       and (not $stored_tag or !exists $seen_tags->{ $stored_tag });
-
-  # make sure all tagged will come before legacy communities
-  push @communities, @$config;
-
   # try last-known-good v2 read
   push @communities, {
     read => 1, write => 0, driver => 'snmp',
@@ -88,7 +81,12 @@ sub get_communities {
     community => $snmp_comm_rw,
   } if $snmp_comm_rw and $mode eq 'write';
 
-  return @communities;
+  # clean the community table of obsolete tags
+  eval { $device->community->update({$tag_name => undef}) }
+    if $device->in_storage
+       and (not $stored_tag or !exists $seen_tags->{ $stored_tag });
+
+  return return ( @communities, @$config );
 }
 
 =head2 snmp_comm_reindex( $snmp, $device, $vlan )
@@ -155,11 +153,11 @@ Return a list of directories in the `netdisco-mibs` folder.
 sub get_mibdirs {
   my $home = (setting('mibhome') || dir(($ENV{NETDISCO_HOME} || $ENV{HOME}), 'netdisco-mibs'));
   return map { dir($home, $_)->stringify }
-             @{ setting('mibdirs') || _get_mibdirs_content($home) };
+             @{ setting('mibdirs') || get_mibdirs_shortnames() };
 }
 
-sub _get_mibdirs_content {
-  my $home = shift;
+sub get_mibdirs_shortnames {
+  my $home = (setting('mibhome') || dir(($ENV{NETDISCO_HOME} || $ENV{HOME}), 'netdisco-mibs'));
   my @list = map {s|$home/||; $_} grep { m|/[a-z0-9-]+$| } grep {-d} glob("$home/*");
   return \@list;
 }

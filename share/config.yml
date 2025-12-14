@@ -28,7 +28,9 @@ domain_suffix: []
 branding_text: Netdisco
 no_auth: false
 suggest_guest: false
+login_banner_message: null
 navbar_autocomplete: true
+max_typeahead_rows: 50
 trust_remote_user: false
 trust_x_remote_user: false
 validate_remote_user: false
@@ -74,16 +76,18 @@ web_plugins:
   - Report::VlanInventory
   - Report::SubnetUtilization
   - Report::PortLog
-  - AdminTask::JobQueue
-  - AdminTask::NodeMonitor
-  - AdminTask::Topology
-  - AdminTask::PollerPerformance
-  - AdminTask::PseudoDevice
-  - AdminTask::SlowDevices
-  - AdminTask::UndiscoveredNeighbors
-  - AdminTask::OrphanedDevices
   - AdminTask::DuplicateDevices
+  - AdminTask::JobQueue
+  - AdminTask::Topology
+  - AdminTask::NodeMonitor
+  - AdminTask::OrphanedDevices
+  - AdminTask::PollerPerformance
+  - AdminTask::PortCtlRole
+  - AdminTask::PseudoDevice
+  - AdminTask::RolePermissionsEditor
+  - AdminTask::SlowDevices
   - AdminTask::TimedOutDevices
+  - AdminTask::UndiscoveredNeighbors
   - AdminTask::UserLog
   - AdminTask::Users
   - Search::Device
@@ -156,9 +160,11 @@ sidebar_defaults:
     n_archived:     { label: 'Archived Data', default: null, idx: 8 }
     age_num:        { default: 3 }
     age_unit:       { default: months }
-    p_vlan_names:   { label: 'Use VLAN Names', default: null, idx: 0 }
-    p_hide1002:     { label: 'Hide VLAN 1002-1005', default: null, idx: 1 }
-    p_include_hidden: { label: 'Include Hidden Ports', default: null, idx: 2 }
+    p_fold_dotzero: { label: 'Fold .0 subinterfaces', default: checked, idx: 0 }
+    p_fold_subinterfaces: { label: 'Fold all subinterfaces', default: null, idx: 1 }
+    p_vlan_names:   { label: 'Use VLAN Names', default: null, idx: 2 }
+    p_hide1002:     { label: 'Hide VLAN 1002-1005', default: null, idx: 3 }
+    p_include_hidden: { label: 'Include Hidden Ports', default: null, idx: 4 }
   device_netmap:
     showips:     { default: null }
     showspeed:   { default: null }
@@ -173,6 +179,8 @@ sidebar_defaults:
   report_portutilization:
     age_num:      { default: 3 }
     age_unit:     { default: months }
+  admintask_rolepermissionseditor:
+    aclhost:     { default: ip }
 netmap_performance_limit_max_devices: 1000
 netmap_custom_fields:
   device: []
@@ -549,6 +557,9 @@ system_port_control_reasons:
   resolved:    'Issue Resolved'
 check_userlog: false
 devport_vlan_limit: 150
+devport_vlans_collapse_threshold: 10
+devport_nodes_collapse_threshold: 20
+devport_ips_collapse_threshold: 5
 thousands_separator: ''
 login_logo: ''
 defanged_admin: 'admin'
@@ -619,6 +630,7 @@ host_groups:
     - 'op:and'
     - 'up:notPresent'
     - 'type:ethernetCsmacd'
+subinterfaces_match: '(.+)\.\d+'
 host_group_displaynames: {}
 device_identity: []
 community: []
@@ -807,6 +819,9 @@ job_prio:
     - 'nbtwalk'
     - 'scheduler'
     - 'stats'
+
+job_targets_prefix:
+  - pingsweep
 
 enable_nonadmin_actions: true
 nonadmin_actions:

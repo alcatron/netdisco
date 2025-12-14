@@ -164,6 +164,7 @@ my $dp = App::Netdisco::DB->resultset('DevicePort')->new_result({
     custom_fields => '{"baz": "quux"}',
 });
 
+
 my $d = App::Netdisco::DB->resultset('Device')->new_result({
     ip   => '127.0.0.1',
     tags => [qw/ quux /],

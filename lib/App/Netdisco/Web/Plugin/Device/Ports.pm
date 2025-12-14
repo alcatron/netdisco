@@ -163,7 +163,11 @@ get '/ajax/content/device/ports' => require_login sub {
     if (param('c_nodes')) {
         # retrieve active/all connected nodes, if asked for
         $set = $set->search({}, { prefetch => [{$nodes_name => $ips_name}] });
-        $set = $set->search({}, { order_by => ["${nodes_name}.vlan", "${nodes_name}.mac", "${ips_name}.ip"] });
+        $set = $set->search({}, { order_by => [
+          \qq{regexp_replace(COALESCE(${nodes_name}.vlan, '0'), '[^0-9]*' ,'0') :: integer},
+          "${nodes_name}.mac",
+          "${ips_name}.ip",
+        ] });
 
         # retrieve wireless SSIDs, if asked for
         $set = $set->search({}, { prefetch => [{$nodes_name => 'wireless'}] })
@@ -252,25 +256,60 @@ get '/ajax/content/device/ports' => require_login sub {
         @results = grep { ! exists $to_hide{$_->port} } @results;
     }
 
+    # empty set would be a 'no records' msg
+    return unless scalar @results;
+
+    # collapsible subinterface groups
+    my %port_has_dot_zero = ();
+    my %port_subinterface_count = ();
+    my $subinterfaces_match = (setting('subinterfaces_match') || qr/(.+)\.\d+/);
+
+    foreach my $port (@results) {
+        if ($port->port =~ m/^${subinterfaces_match}$/) {
+            my $parent = $1;
+            next unless defined $parent;
+            ++$port_subinterface_count{$parent};
+            ++$port_has_dot_zero{$parent}
+              if $port->port =~ m/\.0$/
+                and ($port->type and $port->type =~ m/^(?:propVirtual|ieee8023adLag)$/i);
+            $port->{subinterface_group} = $parent;
+        }
+    }
+
+    foreach my $parent (keys %port_subinterface_count) {
+        my $parent_port = [grep {$_->port eq $parent} @results]->[0];
+        $parent_port->{has_subinterface_group} = true;
+        $parent_port->{has_only_dot_zero_subinterface} = true
+          if exists $port_has_dot_zero{$parent}
+            and $port_subinterface_count{$parent} == 1
+            and ($parent_port->type
+              and $parent_port->type =~ m/^(?:ethernetCsmacd|ieee8023adLag)$/i);
+        if ($parent_port->{has_only_dot_zero_subinterface}) {
+            my $dotzero_port = [grep {$_->port eq "${parent}.0"} @results]->[0];
+            $dotzero_port->{is_dot_zero_subinterface} = true;
+        }
+    }
+
     # sort ports
     @results = sort { &App::Netdisco::Util::Web::sort_port($a->port, $b->port) } @results;
 
     # add acl on port config
+    # this has the merged yaml and database config
     if (param('c_admin') and user_has_role('port_control')) {
       # for native vlan change
       map {$_->{port_acl_pvid} = port_acl_pvid($_, $device, logged_in_user)} @results;
-      # for name/descr change
-      map {$_->{port_acl_name} = port_acl_name($_, $device, logged_in_user)} @results;
       # for up/down and poe
       map {$_->{port_acl_service} = port_acl_service($_, $device, logged_in_user)} @results;
+      # for name/descr change
+      map {$_->{port_acl_name} = ($_->{port_acl_service} || # if service true then this is OK
+                                  port_acl_name($_, $device, logged_in_user))} @results;
     }
 
     # filter the tags by hide_tags setting
     my @hide = @{ setting('hide_tags')->{'device_port'} };
     map { $_->{filtered_tags} = [ singleton (@{ $_->tags || [] }, @hide, @hide) ] } @results;
 
-    # empty set would be a 'no records' msg
-    return unless scalar @results;
+    # pretty print the port running speed
     use App::Netdisco::Util::Port 'to_speed';
     map { $_->{speed_running} = to_speed( $_->speed ) } @results;
 

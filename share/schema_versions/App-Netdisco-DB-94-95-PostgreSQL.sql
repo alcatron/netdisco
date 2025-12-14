@@ -1,0 +1,7 @@
+BEGIN;
+
+ALTER TABLE node_ip ADD COLUMN vrf text DEFAULT '' NOT NULL;
+
+ALTER TABLE node_ip DROP CONSTRAINT node_ip_pkey;
+
+COMMIT;

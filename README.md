@@ -14,11 +14,11 @@ See the demo at: [https://netdisco2-demo.herokuapp.com/](https://netdisco2-demo.
 
 ##  Installation
 
-Netdisco is written in Perl and Python and is self-contained apart from the PostgreSQL database, so is very easy to install and runs well on any linux or unix system. We also have [docker images](https://store.docker.com/community/images/netdisco/netdisco) if you prefer.
+Netdisco is written in Perl and Python and is self-contained apart from the PostgreSQL database, so is very easy to install and runs well on any linux or unix system. We also have [container images](https://store.docker.com/community/images/netdisco/netdisco) if you prefer.
 
 It includes a lightweight web server for the interface, a backend daemon to gather data from your network, and a command line interface for troubleshooting. There is a simple configuration file in YAML format.
 
 Please check out the [installation instructions](https://metacpan.org/pod/App::Netdisco) on CPAN. When upgrading, make sure to check the latest [Release Notes](https://github.com/netdisco/netdisco/wiki/Release-Notes).
 
-You can also speak to someone in the [`#netdisco@libera`](https://kiwiirc.com/nextclient/irc.libera.chat/netdisco) IRC channel, or on the [community email list](https://lists.sourceforge.net/lists/listinfo/netdisco-users).
+You can also speak to someone in the [`#netdisco@libera`](https://web.libera.chat/#netdisco) IRC channel, or on the [community email list](https://lists.sourceforge.net/lists/listinfo/netdisco-users).
 
